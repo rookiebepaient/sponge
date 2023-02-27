@@ -17,7 +17,7 @@ void get_URL(const string &host, const string &path) {
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
 
-	FullStackSocket socket1;
+	FullStackSocket socket1;                //使用项目完成的TCP/IP协议栈
 	socket1.connect(Address(host, "http"));
 
 	socket1.write("GET " + path + " HTTP/1.1\r\n");
