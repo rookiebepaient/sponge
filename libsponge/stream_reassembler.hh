@@ -5,16 +5,32 @@
 
 #include <cstdint>
 #include <string>
+#include <deque>
+#include <unordered_map>
+#include <string_view>
+#include <memory>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
-
-    ByteStream _output;  //!< The reassembled in-order byte stream
-    size_t _capacity;    //!< The maximum number of bytes
-
+    ByteStream _output;            //!< The reassembled in-order byte stream
+    size_t _capacity;              //!< The maximum number of bytes
+    size_t _eof_index{0};          // eof的位置
+    size_t _unassembled_bytes{0};  //没有被重组的字节数
+    size_t _eof_sign{false};
+    size_t _expected_index{0};         //期望到来的index
+    std::deque<char> _stream_reassembler;  //流重组器
+    std::deque<bool> _bitmap;              //标志该位置是否有数据
+    /* struct StrStore {
+      size_t begin_index;
+      size_t end_index;
+      std::string_view str;
+      StrStore(size_t begin, size_t end, std::string_view sv)
+        : begin_index(begin), end_index(end), str(sv) {}
+    };
+    std::unordered_map<int, std::shared_ptr<StrStore>> _sr{}; */
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
