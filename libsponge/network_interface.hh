@@ -5,6 +5,7 @@
 #include "tcp_over_ip.hh"
 #include "tun.hh"
 
+#include <map>
 #include <optional>
 #include <queue>
 
@@ -39,6 +40,27 @@ class NetworkInterface {
 
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
+
+    // ARP条目
+    struct ARP_Entry {
+        EthernetAddress ethernet_addr;
+        size_t ttl;  // time to live 生存时间
+    };
+
+    //存储IP地址和MAC地址的映射关系
+    std::map<uint32_t, NetworkInterface::ARP_Entry> ip_mac_map{};
+
+    //默认ARP条目过期时间
+    const size_t _default_arp_entry_ttl = 30 * 1000;
+
+    //发出的ARP请求集合，如果在 ttl 时间内未返回响应，则丢弃等待的报文
+    std::map<uint32_t, size_t> _waiting_arp_response_map{};
+
+    //默认ARP请求过期时间
+    const size_t _default_arp_response_ttl = 5 * 1000;
+
+    //等待ARP报文返回的待处理 IP 数据报
+    std::deque<std::pair<uint32_t, InternetDatagram>> _waiting_arp_internet_dgram{};
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses

@@ -49,6 +49,17 @@ class Router {
     //! datagram's destination address.
     void route_one_datagram(InternetDatagram &dgram);
 
+    //路由条目
+    struct RoutingEntry {
+        uint32_t _route_prefix;
+        uint8_t _prefix_length;
+        std::optional<Address> _next_hop;
+        size_t _interface_num;
+    };  //类和结构体的反括号后面一定要记得加 分号 不然会编译不通过，而且错误提示可能不会涉及到这个地方
+
+    //路由表
+    std::vector<Router::RoutingEntry> _routing_table{};
+
   public:
     //! Add an interface to the router
     //! \param[in] interface an already-constructed network interface
