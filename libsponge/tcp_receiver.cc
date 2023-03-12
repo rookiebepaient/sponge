@@ -18,52 +18,22 @@ using namespace std;
  */
 
 void TCPReceiver::segment_received(const TCPSegment &seg) {
-    // DUMMY_CODE(seg);
-    /* 原始自己写的版本，测试样例全部通过
-    uint64_t abs_seqno; //uint64 类型, ackno 是uint32类型
-    uint64_t checkpoint = stream_out().bytes_written();    // bytes_written() 得到的是abs seqno;
-    //WrappingInt32 _ackno;
-
-    TCPHeader tcp_header = seg.header();
-    Buffer payload = seg.payload();
-
-    if (tcp_header.syn) {
-        _syn = true;
-        _isn = tcp_header.seqno;    //isn 是 seqno, uint32类型
-        //_reassembler.push_substring(payload.copy(), 0, tcp_header.fin);
-    }
-
-    if (_syn && (!tcp_header.syn)) {
-        abs_seqno = unwrap(tcp_header.seqno, _isn, checkpoint);
-        uint64_t stream_index = abs_seqno - 1;
-        if (tcp_header.seqno != _isn) {
-            _reassembler.push_substring(payload.copy(), stream_index, tcp_header.fin);  //这个index需要的是stream index
-        }
-        // if (tcp_header.seqno == _ackno) {
-        //     //bytes_written()是累加的.但需要的是每次已读取的字节数
-        //     //现在的问题是,_ackno
-    在乱序到来的字节流被重新整合后,会发生错误的情况.错误的情况就是,在正确的到来一个seg后,
-        //     //_ackno被正确响应,当下一个是乱序到来的seg时,_ackno
-    依然是上一个被正确响应的,再来一个正确顺序的seg时,此时响应的_ackno将会是
-        //     _ackno = tcp_header.seqno + stream_out().buffer_size();
-        // }
-
-    }
-    */
-
     const TCPHeader &header = seg.header();
     if (!_syn) {
-        // 注意 SYN 包之前的数据包必须全部丢弃
-        if (!header.syn)
+        // SYN 包之前的数据包必须全部丢弃
+        // 即未经过三次握手，不接受传来的报文段，防止接受旧数据
+        if (!header.syn) {
             return;
+        }
+        // isn记录的是对等方发送过来的isn，为后续的ackno计算做准备
         _isn = header.seqno;
         _syn = true;
     }
+    // 先得到距离seqno最近一次报文段的 abs_seqno 再unwarp得到这次报文段对应的 abs_seqno
     uint64_t abs_ackno = _reassembler.stream_out().bytes_written() + 1;
     uint64_t curr_abs_seqno = unwrap(header.seqno, _isn, abs_ackno);
 
-    //! NOTE: SYN 包中的 payload 不能被丢弃
-    //! NOTE: reassember 足够鲁棒以至于无需进行任何 seqno 过滤操作
+    // 绝对序列号 - 1 = 流索引号，SYN 包中的 payload 不能被丢弃
     uint64_t stream_index = curr_abs_seqno - 1 + header.syn;
     _reassembler.push_substring(seg.payload().copy(), stream_index, header.fin);
 }
@@ -82,4 +52,5 @@ optional<WrappingInt32> TCPReceiver::ackno() const {
     return {};
 }
 
+// reassembler 可存储的中尚未整合的报文段的索引范围
 size_t TCPReceiver::window_size() const { return _capacity - _reassembler.stream_out().buffer_size(); }

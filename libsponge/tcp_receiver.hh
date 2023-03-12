@@ -22,6 +22,7 @@ class TCPReceiver {
 
     //! inital sequence numbers
     WrappingInt32 _isn{0};
+    
     //! indicate syn
     bool _syn{false};
 
