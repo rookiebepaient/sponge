@@ -6,7 +6,6 @@
 #include "tcp_segment.hh"
 #include "wrapping_integers.hh"
 
-#include <deque>
 #include <functional>
 #include <queue>
 #include <utility>
@@ -19,31 +18,6 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    //! retransmission timer
-    class Timer {
-      private:
-        size_t _rto;
-
-      public:
-        //! Initialize a Timer
-        Timer(size_t &time_ms) : _rto(time_ms) {}
-
-        //! change _rto value
-        void change_rto(size_t time_ms) {
-            if (_rto >= time_ms) {
-                _rto = _rto - time_ms;
-            } else {
-                _rto = 0;
-            }
-        }
-
-        //! set _rto value
-        void set_rto(size_t time_ms) { _rto = time_ms; }
-
-        //! get _rto value
-        size_t get_rto() { return _rto; }
-    };
-
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
 
@@ -59,25 +33,16 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    // follow is self-private member
+    // 以下是后续添加的字段
 
     //! the receiver windowsize
     size_t _receiver_windowsize{1};
 
-    //! store the sent but no acked seg
-    std::deque<std::pair<TCPSegment, TCPSender::Timer>> _seg_timer_pair{};
-
-    //! consecutive_retransmissions
+    //! 连续重传次数
     size_t _consecutive_retransmissions{0};
 
-    //! retx_timeout
+    //! RTO, 超时重传时间
     size_t _retx_timeout{0};
-
-    //! eof sign
-    bool _eof_sign{false};
-
-    //! zero windossize
-    bool _is_zero_ws{false};
 
     //！是否建立连接发送SYN
     bool _is_syn_sent{false};
@@ -92,10 +57,10 @@ class TCPSender {
     size_t _retransmission_timer{0};
 
     //！
-    size_t _is_timer_ruuning{false};
+    size_t _is_timer_runing{false};
 
     //! 已发送但是未被确认的报文段
-    std::deque<TCPSegment> _outstanding_segments{};
+    std::queue<TCPSegment> _outstanding_segments{};
 
   public:
     //! Initialize a TCPSender
